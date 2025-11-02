@@ -1,0 +1,75 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Local TTS + STT Demo (Male UK Voice)</title>
+  <style>
+    body { font-family: Arial; max-width:700px; margin:30px auto; padding:10px; }
+    textarea { width:100%; }
+    button { padding:8px 12px; margin:6px 4px; }
+  </style>
+</head>
+<body>
+  <h2>Local TTS & STT (Male UK Voice)</h2>
+
+  <label>Text:</label><br>
+  <textarea id="text" rows="4">Hello this is astro talk!</textarea><br>
+
+  <button id="speak">Speak (TTS)</button>
+  <button id="record">Record (STT)</button>
+
+  <div id="status" style="margin-top:10px;"></div>
+  <div style="margin-top:8px;">Transcript: <span id="trans">—</span></div>
+
+<script>
+  const synth = window.speechSynthesis;
+  let voice; 
+
+  function initVoice() {
+    const voices = synth.getVoices();
+    
+    voice = voices.find(v => v.lang === 'en-GB' && v.name.toLowerCase().includes('male')) || voices.find(v => v.lang === 'en-GB') || voices[0];
+  }
+
+  initVoice();
+  if (speechSynthesis.onvoiceschanged !== undefined) {
+    speechSynthesis.onvoiceschanged = initVoice;
+  }
+
+  function speakText(text) {
+    const u = new SpeechSynthesisUtterance(text);
+    if (voice) u.voice = voice;
+    u.lang = 'en-GB';
+    synth.speak(u);
+  }
+
+  document.getElementById('speak').addEventListener('click', () => {
+    speakText(document.getElementById('text').value);
+  });
+
+  const recordBtn = document.getElementById('record');
+  const status = document.getElementById('status');
+  const transEl = document.getElementById('trans');
+
+  if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+    recordBtn.disabled = true;
+    recordBtn.textContent = "STT not supported";
+  } else {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.lang = "en-GB";
+    recognition.interimResults = false;
+
+    recognition.onstart = () => status.textContent = "Listening...";
+    recognition.onend = () => status.textContent = "";
+    recognition.onresult = (e) => {
+      const txt = e.results[0][0].transcript;
+      transEl.textContent = txt;
+      document.getElementById('text').value = txt;
+    };
+
+    recordBtn.addEventListener("click", () => recognition.start());
+  }
+</script>
+</body>
+</html>
